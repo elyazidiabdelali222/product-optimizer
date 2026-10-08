@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Optimizer | Tableau de bord</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['"Plus Jakarta Sans"','system-ui','sans-serif']},boxShadow:{apple:'0 4px 20px -2px rgba(0,0,0,.05),0 2px 6px -1px rgba(0,0,0,.03)','apple-hover':'0 20px 40px -15px rgba(59,130,246,.14),0 10px 20px -5px rgba(0,0,0,.04)'}}}}
+</script>
+<style>
+body{background:#f8fafc;color:#0f172a;font-feature-settings:"cv02","cv03","cv04","cv11"}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9999px}
+.glass-card{background:rgba(255,255,255,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(226,232,240,.8)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.fi{animation:fadeIn .45s cubic-bezier(.16,1,.3,1) both}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.pulse-dot{animation:pulseG 2s infinite}
+@keyframes sh{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.sk{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:12px}
+.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+tbody tr{transition:background .2s,transform .2s}tbody tr:hover{transform:translateX(3px)}
+th[data-k]{cursor:pointer;user-select:none}th[data-k]:hover{color:#2563eb}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+<header class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80">
+ <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+  <div class="flex items-center space-x-3">
+   <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20"><i data-lucide="zap" class="w-5 h-5"></i></div>
+   <span class="font-bold text-lg tracking-tight">Product<span class="text-blue-600">Optimizer</span></span>
+  </div>
+  <div class="flex items-center space-x-2 sm:space-x-3">
+   <div class="hidden md:flex items-center space-x-2 bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600">
+    <span id="sdot" class="w-2 h-2 rounded-full bg-slate-400"></span><span id="stxt">Connexion…</span>
+   </div>
+   <button id="btnExport" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm transition active:scale-95"><i data-lucide="download" class="w-4 h-4 text-slate-500"></i><span class="hidden sm:inline">Exporter CSV</span></button>
+   <button id="btnRefresh" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition active:scale-95"><i data-lucide="refresh-cw" id="rIcon" class="w-4 h-4"></i><span>Actualiser</span></button>
+  </div>
+ </div>
+</header>
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+ <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 sm:p-8 rounded-3xl shadow-xl shadow-blue-500/10 relative overflow-hidden fi">
+  <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+  <div class="relative z-10 space-y-2">
+   <div class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i><span>Agent d'optimisation de fiches produits</span></div>
+   <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Tableau de bord des fiches produits</h1>
+   <p class="text-blue-100 text-sm max-w-2xl">Titres, descriptions et meta tags réécrits par l'IA, avec un score avant/après et la justification de chaque choix. Les données viennent de Google Sheets en direct.</p>
+  </div>
+ </div>
+
+ <div id="kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+
+ <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="glass-card p-6 rounded-3xl shadow-apple lg:col-span-2 fi" style="animation-delay:.15s">
+   <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+    <div><h2 class="text-lg font-bold tracking-tight">Scores avant / après par produit</h2><p class="text-xs text-slate-500">La ligne pointillée marque le seuil de conformité (70/100)</p></div>
+    <div class="flex items-center text-xs text-slate-600 gap-4">
+     <span class="flex items-center"><span class="w-3 h-3 bg-slate-300 rounded-full mr-1"></span>Avant</span>
+     <span class="flex items-center"><span class="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>Après</span>
+    </div>
+   </div>
+   <div class="h-72 w-full relative"><canvas id="mainChart"></canvas></div>
+  </div>
+  <div class="glass-card p-6 rounded-3xl shadow-apple fi" style="animation-delay:.25s">
+   <h2 class="text-lg font-bold tracking-tight">Qualité des fiches</h2><p class="text-xs text-slate-500 mb-4">Répartition selon le score après optimisation</p>
+   <div class="h-44 relative"><canvas id="donut"></canvas></div>
+   <div id="legend" class="mt-5 space-y-2 text-xs"></div>
+  </div>
+ </div>
+
+ <div class="glass-card rounded-3xl shadow-apple overflow-hidden fi" style="animation-delay:.3s">
+  <div class="p-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+   <div><h2 class="text-lg font-bold tracking-tight">Produits optimisés</h2><p class="text-xs text-slate-500">Clique sur une ligne pour voir la fiche avant/après et la justification</p></div>
+   <div class="flex flex-wrap items-center gap-3">
+    <div class="relative"><i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+     <input id="q" type="search" aria-label="Rechercher un produit" placeholder="Rechercher un produit..." class="pl-10 pr-4 py-2 w-64 max-w-full bg-slate-50/80 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"></div>
+    <div id="filters" class="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-2xl"></div>
+   </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table class="w-full text-left border-collapse min-w-[680px]">
+    <thead><tr id="thead" class="bg-slate-50/60 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider"></tr></thead>
+    <tbody id="tbody" class="divide-y divide-slate-100 text-xs text-slate-700"></tbody>
+   </table>
+  </div>
+  <div class="p-4 bg-slate-50/60 border-t border-slate-200 text-xs text-slate-500" id="count"></div>
+ </div>
+
+ <footer class="text-center text-xs text-slate-400 pb-4">Source : Google Sheets, onglet Optimized · Seuil de validation : 70/100 · Scores attribués par le modèle d'IA · Développé par Abdelali EL YAZIDI</footer>
+</main>
+
+<div id="drawer" class="fixed inset-0 z-50 overflow-hidden pointer-events-none transition-opacity duration-300 opacity-0" aria-hidden="true">
+ <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" id="dbg"></div>
+ <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+  <div id="panel" role="dialog" aria-label="Détail du produit" class="w-screen max-w-lg bg-white/95 backdrop-blur-xl shadow-2xl border-l border-slate-200 transform transition-transform duration-300 ease-out translate-x-full flex flex-col">
+   <div class="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+    <div class="flex items-center space-x-3 min-w-0"><div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>
+     <div class="min-w-0"><h3 id="dt" class="text-base font-bold truncate"></h3><p class="text-xs text-slate-500">Fiche optimisée par l'agent</p></div></div>
+    <button id="dclose" aria-label="Fermer" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+   </div>
+   <div id="dbody" class="flex-1 overflow-y-auto p-6 space-y-6"></div>
+   <div class="p-5 border-t border-slate-200 bg-slate-50/50 flex justify-end"><button id="dclose2" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100">Fermer</button></div>
+  </div>
+ </div>
+</div>
+<div id="toasts" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+<script>
+const SHEET_ID="12rlfKxzQZwvvBCz1jAiL_LdjVij2PT42WOdl_mjqI6Y",LIMIT=70;
+const DEMO=[
+{product_name:"Sérum Vitamine C",original_description:"Sérum avec vitamine C pour le visage",optimized_title:"Sérum Vitamine C pour le Visage",optimized_description:"Sérum à base de vitamine C conçu pour le soin du visage, à intégrer dans votre routine quotidienne.",meta_title:"Sérum Vitamine C Visage | Skincare",meta_description:"Sérum vitamine C pour le visage, pour votre routine skincare.",keywords:"sérum vitamine C, soin du visage",score_before:35,score_after:62,justification:"Fiche structurée avec un ton doux et sans promesse médicale.",missing_info:"Type de peau, format, texture"},
+{product_name:"Sac à Dos Cuir",original_description:"Sac à dos en cuir véritable marron",optimized_title:"Sac à Dos Cuir Véritable Marron",optimized_description:"Sac à dos en cuir véritable de couleur marron, pour accompagner vos journées avec élégance.",meta_title:"Sac à Dos Cuir Marron | Mode",meta_description:"Sac à dos en cuir véritable marron, élégant pour le quotidien.",keywords:"sac à dos cuir, sac marron",score_before:42,score_after:71,justification:"Ton élégant, matière mise en avant.",missing_info:"Dimensions, compartiments, poids"}];
+let data=DEMO,view=[],filter="all",q="",sortKey="gain",sortDir=-1,chart=null,donut=null,loaded=false;
+const $=i=>document.getElementById(i);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n=v=>Number(v)||0,gain=p=>n(p.score_after)-n(p.score_before),avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const tier=s=>s>=LIMIT?{k:"ok",l:"Conforme",c:"bg-emerald-50 text-emerald-600",b:"bg-emerald-50 text-emerald-700 border-emerald-200"}:s>=60?{k:"warn",l:"À revoir",c:"bg-amber-50 text-amber-600",b:"bg-amber-50 text-amber-700 border-amber-200"}:{k:"bad",l:"Insuffisante",c:"bg-red-50 text-red-600",b:"bg-red-50 text-red-700 border-red-200"};
+const icons=()=>{if(window.lucide)lucide.createIcons()};
+
+function toast(msg,type){const t=document.createElement("div");t.className=(type==="err"?"bg-red-600":type==="info"?"bg-blue-600":"bg-emerald-600")+" text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold fi pointer-events-auto transition-opacity duration-300";t.textContent=msg;$("toasts").appendChild(t);setTimeout(()=>{t.style.opacity=0;setTimeout(()=>t.remove(),300)},3500)}
+function setStatus(kind,txt){$("stxt").textContent=txt;$("sdot").className="w-2 h-2 rounded-full "+(kind==="live"?"bg-emerald-500 pulse-dot":kind==="err"?"bg-red-500":"bg-slate-400")}
+
+function countUp(root){root.querySelectorAll("[data-to]").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),d=900;(function f(t){const p=Math.min(1,(t-t0)/d),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e);if(p<1)requestAnimationFrame(f)})(t0)})}
+
+function renderKPIs(){
+ const b=avg(data.map(p=>n(p.score_before))),a=avg(data.map(p=>n(p.score_after))),ok=data.filter(p=>n(p.score_after)>=LIMIT).length,pct=data.length?Math.round(ok/data.length*100):0,rew=data.filter(p=>n(p.attempts)>1).length;
+ const cards=[
+  ["Produits optimisés",`<span data-to="${data.length}">0</span>`,"package","bg-blue-50 text-blue-600",rew?`dont ${rew} réécrite${rew>1?"s":""} automatiquement par l'agent`:"Fiches traitées par l'agent"],
+  ["Score moyen",`<span data-to="${Math.round(b)}">0</span><span class="text-slate-300 mx-1.5 text-xl">→</span><span data-to="${Math.round(a)}">0</span>`,"award","bg-emerald-50 text-emerald-600","Avant → après optimisation (sur 100)"],
+  ["Gain moyen",`+<span data-to="${Math.round(a-b)}">0</span><span class="text-base text-slate-400 ml-1">pts</span>`,"trending-up","bg-purple-50 text-purple-600","Progression moyenne par fiche"],
+  ["Fiches conformes",`<span data-to="${ok}">0</span><span class="text-slate-400 text-xl">/${data.length}</span>`,"check-circle-2","bg-amber-50 text-amber-600",`${pct}% au-dessus du seuil de ${LIMIT}`]];
+ $("kpis").innerHTML=cards.map((c,i)=>`<div class="glass-card p-6 rounded-3xl shadow-apple hover:shadow-apple-hover transition-all duration-300 group fi" style="animation-delay:${i*80}ms"><div class="flex items-center justify-between mb-4"><span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">${c[0]}</span><div class="w-10 h-10 rounded-2xl ${c[3]} flex items-center justify-center group-hover:scale-110 transition-transform"><i data-lucide="${c[2]}" class="w-5 h-5"></i></div></div><div class="text-3xl font-extrabold">${c[1]}</div><p class="text-xs text-slate-500 mt-2">${c[4]}</p></div>`).join("");
+ icons();countUp($("kpis"));
+}
+
+function renderCharts(){
+ const labels=data.map(p=>p.product_name),bef=data.map(p=>n(p.score_before)),aft=data.map(p=>n(p.score_after)),th=data.map(()=>LIMIT);
+ const cnt={ok:0,warn:0,bad:0};data.forEach(p=>cnt[tier(n(p.score_after)).k]++);
+ const dd=[cnt.ok,cnt.warn,cnt.bad];
+ if(chart){chart.data.labels=labels;chart.data.datasets[0].data=bef;chart.data.datasets[1].data=aft;chart.data.datasets[2].data=th;chart.update();donut.data.datasets[0].data=dd;donut.update()}
+ else if(window.Chart){
+  const f={family:"Plus Jakarta Sans",size:11};
+  chart=new Chart($("mainChart"),{data:{labels,datasets:[
+   {type:"bar",label:"Avant",data:bef,backgroundColor:"#cbd5e1",borderRadius:8,maxBarThickness:34},
+   {type:"bar",label:"Après",data:aft,backgroundColor:"#2563eb",borderRadius:8,maxBarThickness:34},
+   {type:"line",label:"Seuil",data:th,borderColor:"#16a34a",borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false}]},
+   options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100,easing:"easeOutQuart"},plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(15,23,42,.92)",padding:12,cornerRadius:12,titleFont:f,bodyFont:f}},scales:{y:{min:0,max:100,grid:{color:"rgba(226,232,240,.6)"},ticks:{font:f,color:"#64748b"}},x:{grid:{display:false},ticks:{font:f,color:"#64748b"}}}}});
+  donut=new Chart($("donut"),{type:"doughnut",data:{labels:["Conformes","À revoir","Insuffisantes"],datasets:[{data:dd,backgroundColor:["#10b981","#f59e0b","#ef4444"],borderWidth:3,borderColor:"#fff",hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:"72%",animation:{duration:1100},plugins:{legend:{display:false}}}});
+ }
+ $("legend").innerHTML=[["Conformes (≥ 70)","bg-emerald-500",cnt.ok],["À revoir (60 à 69)","bg-amber-500",cnt.warn],["Insuffisantes (< 60)","bg-red-500",cnt.bad]].map(r=>`<div class="flex items-center justify-between py-1.5 border-t border-slate-100 first:border-0"><span class="flex items-center text-slate-600"><span class="w-2.5 h-2.5 rounded-full ${r[1]} mr-2"></span>${r[0]}</span><b>${r[2]}</b></div>`).join("");
+}
+
+const COLS=[["product_name","Produit"],["score_before","Avant"],["score_after","Après"],["gain","Gain"],["tier","Statut"],["","Action"]];
+const sv=(p,k)=>k==="gain"?gain(p):k==="tier"?n(p.score_after):k==="product_name"?String(p.product_name).toLowerCase():n(p[k]);
+function renderFilters(){$("filters").innerHTML=[["all","Tous"],["ok","Conformes"],["ko","À revoir"]].map(f=>`<button data-f="${f[0]}" class="px-3 py-1.5 rounded-xl text-xs ${filter===f[0]?"font-bold text-slate-700 bg-white shadow-sm":"font-medium text-slate-600 hover:text-slate-900"} transition-all">${f[1]}</button>`).join("")}
+function renderTable(){
+ $("thead").innerHTML=COLS.map(c=>`<th class="py-4 px-6 ${c[0]==="gain"||c[0]===""?"":""}" ${c[0]?`data-k="${c[0]}"`:""}>${c[1]}${sortKey===c[0]?(sortDir>0?" ↑":" ↓"):""}</th>`).join("");
+ view=data.filter(p=>String(p.product_name).toLowerCase().includes(q)&&(filter==="all"||(filter==="ok"?n(p.score_after)>=LIMIT:n(p.score_after)<LIMIT))).sort((x,y)=>{const a=sv(x,sortKey),b=sv(y,sortKey);return(a>b?1:a<b?-1:0)*sortDir});
+ $("count").textContent=`Affichage de ${view.length} produit${view.length>1?"s":""} sur ${data.length}`;
+ if(!view.length){$("tbody").innerHTML=`<tr><td colspan="6" class="py-12 text-center text-slate-400 text-sm">Aucun produit correspondant.</td></tr>`;return}
+ $("tbody").innerHTML=view.map((p,i)=>{const t=tier(n(p.score_after));return `<tr class="hover:bg-blue-50/40 cursor-pointer fi" style="animation-delay:${i*45}ms" tabindex="0" data-i="${i}">
+ <td class="py-4 px-6"><div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4"></i></div><div class="min-w-0"><div class="font-semibold text-slate-900">${esc(p.product_name)}</div><div class="text-slate-500 truncate max-w-xs">${esc(p.optimized_title)}</div></div></div></td>
+ <td class="py-4 px-6 font-medium">${n(p.score_before)}</td>
+ <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-full text-xs font-bold border ${t.b}">${n(p.score_after)} / 100</span></td>
+ <td class="py-4 px-6 font-bold text-emerald-600">+${gain(p)}</td>
+ <td class="py-4 px-6"><span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${t.c}"><span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>${t.l}</span>${n(p.attempts)>1?`<span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-600">Réécrite</span>`:""}</td>
+ <td class="py-4 px-6"><span class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl font-semibold">Détails</span></td></tr>`}).join("");
+ icons();
+}
+
+function cnt(s,l){const k=String(s||"").length,ok=k<=l;return `<span class="${ok?"text-emerald-600":"text-amber-600"} normal-case font-semibold">${k}/${l} caractères</span>`}
+function bar(s,l){const k=Math.min(100,String(s||"").length/l*100);return `<div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden"><div class="bar h-full rounded-full ${String(s||"").length<=l?"bg-emerald-500":"bg-amber-500"} transition-all duration-700" style="width:0" data-w="${k}"></div></div>`}
+function openDrawer(i){
+ const p=view[i];if(!p)return;const t=tier(n(p.score_after));
+ const kw=String(p.keywords||"").split(",").map(s=>s.trim()).filter(Boolean),mi=String(p.missing_info||"").split(",").map(s=>s.trim()).filter(Boolean);
+ $("dt").textContent=p.product_name;
+ const sec=(h,b,j)=>`<div class="fi" style="animation-delay:${j*70}ms"><h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2 flex justify-between">${h}</h4>${b}</div>`;
+ const act=t.k==="ok"?"":`<div class="p-4 rounded-2xl border border-amber-200 bg-amber-50/60 fi"><h4 class="text-xs font-bold text-amber-800 mb-2">Action recommandée</h4><ol class="list-decimal pl-4 text-xs text-amber-900 space-y-1"><li>Compléter les informations manquantes avec des données réelles du produit.</li><li>Les ajouter dans la colonne <b>description</b> de Sheet1 et remettre <b>status</b> à <b>pending</b>.</li><li>Relancer le workflow n8n, puis cliquer sur <b>Actualiser</b>.</li></ol></div>`;
+ $("dbody").innerHTML=`<div class="bg-gradient-to-br from-slate-50 to-blue-50/50 p-5 rounded-2xl border border-slate-200/80 fi"><div class="flex items-center justify-between mb-3"><span class="text-xs font-semibold text-slate-500 uppercase">Score d'optimisation</span><span class="px-2.5 py-1 rounded-full text-xs font-bold ${t.c}">${t.l}</span></div>
+ <div class="flex items-end justify-between"><div><span class="text-slate-400 text-2xl font-bold">${n(p.score_before)}</span><span class="text-slate-300 mx-2">→</span><span class="text-4xl font-extrabold">${n(p.score_after)}</span><span class="text-sm font-semibold text-slate-500"> / 100</span></div><span class="text-lg font-extrabold text-emerald-600">+${gain(p)}</span></div>
+ <div class="w-full bg-slate-200 h-2 rounded-full mt-4 overflow-hidden"><div class="bar bg-blue-600 h-full rounded-full transition-all duration-700" style="width:0" data-w="${n(p.score_after)}"></div></div></div>
+ ${n(p.attempts)>1?`<div class="p-4 rounded-2xl border border-indigo-200 bg-indigo-50/60 fi"><h4 class="text-xs font-bold text-indigo-800 mb-1">Réécrite automatiquement (essai ${n(p.attempts)})</h4><p class="text-xs text-indigo-900">La première version était sous le seuil de ${LIMIT}/100. L'agent l'a réécrite en tenant compte de sa propre critique.</p></div>`:""}
+ ${act}
+ ${sec("Titre optimisé",`<p class="text-sm font-semibold">${esc(p.optimized_title)}</p>`,1)}
+ ${sec("Description",`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"><div class="text-[10px] font-semibold text-slate-500 mb-1">AVANT</div>${esc(p.original_description)}</div><div class="p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs"><div class="text-[10px] font-semibold text-blue-600 mb-1">APRÈS</div>${esc(p.optimized_description)}</div></div>`,2)}
+ ${sec("Meta title "+cnt(p.meta_title,60),`<p class="text-xs">${esc(p.meta_title)}</p>${bar(p.meta_title,60)}`,3)}
+ ${sec("Meta description "+cnt(p.meta_description,160),`<p class="text-xs">${esc(p.meta_description)}</p>${bar(p.meta_description,160)}`,4)}
+ ${sec("Mots-clés",kw.length?kw.map(k=>`<span class="inline-block bg-slate-100 border border-slate-200 rounded-lg px-2 py-0.5 mr-1.5 mb-1.5 text-xs">${esc(k)}</span>`).join(""):"—",5)}
+ ${sec("Pourquoi ces choix",`<p class="text-xs text-slate-700 leading-relaxed">${esc(p.justification)}</p>`,6)}
+ ${sec("Informations à compléter",mi.length?`<ul class="list-disc pl-4 text-xs space-y-0.5">${mi.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`:"—",7)}`;
+ const d=$("drawer");d.classList.remove("pointer-events-none","opacity-0");d.setAttribute("aria-hidden","false");$("panel").classList.remove("translate-x-full");
+ icons();requestAnimationFrame(()=>setTimeout(()=>$("dbody").querySelectorAll(".bar").forEach(b=>b.style.width=b.dataset.w+"%"),80));$("dclose").focus();
+}
+function closeDrawer(){const d=$("drawer");d.classList.add("opacity-0");d.setAttribute("aria-hidden","true");$("panel").classList.add("translate-x-full");setTimeout(()=>d.classList.add("pointer-events-none"),300)}
+
+function exportCSV(){
+ const h=["product_name","original_description","optimized_title","optimized_description","meta_title","meta_description","keywords","score_before","score_after","justification","missing_info","attempts"],c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+ const blob=new Blob(["\ufeff"+[h.join(",")].concat(data.map(p=>h.map(k=>c(p[k])).join(","))).join("\n")],{type:"text/csv;charset=utf-8"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="product-optimizer.csv";a.click();toast("Export CSV téléchargé","ok");
+}
+function renderAll(){renderKPIs();renderCharts();renderFilters();renderTable()}
+
+function loadSheet(){
+ setStatus("","Chargement depuis Google Sheets…");$("rIcon").classList.add("spin");
+ const old=$("gs");if(old)old.remove();let done=false;
+ const fin=()=>$("rIcon").classList.remove("spin");
+ window.__gs=res=>{done=true;try{
+  if(res.status!=="ok")throw new Error((res.errors&&res.errors[0]&&res.errors[0].message)||"réponse refusée");
+  const heads=res.table.cols.map(c=>(c.label||"").trim());
+  const out=res.table.rows.map(r=>{const o={};heads.forEach((h,i)=>{const c=r.c[i];o[h]=c&&c.v!=null?c.v:""});return o}).filter(o=>o.product_name&&o.score_after!=="");
+  if(!out.length)throw new Error("aucune ligne avec des scores");
+  const m=new Map();out.forEach(o=>{const k=String(o.product_name).trim();m.delete(k);m.set(k,o)});
+  data=[...m.values()];const dups=out.length-data.length;
+  setStatus("live","Connecté · "+data.length+" produits"+(dups?" · "+dups+" doublon"+(dups>1?"s":"")+" ignoré"+(dups>1?"s":""):""));
+  if(loaded)toast("Données actualisées","ok");loaded=true;
+ }catch(e){setStatus("err","Connexion impossible · données de démo");toast("Connexion impossible : "+e.message,"err")}
+  fin();renderAll()};
+ const sc=document.createElement("script");sc.id="gs";
+ sc.src="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:json;responseHandler:__gs&headers=1&sheet=Optimized&_="+Date.now();
+ sc.onerror=()=>{if(!done){setStatus("err","Connexion impossible · données de démo");toast("Le Sheet n'est pas accessible (partage en lecture ?)","err");fin();renderAll()}};
+ document.body.appendChild(sc);
+}
+
+$("q").oninput=e=>{q=e.target.value.toLowerCase();renderTable()};
+$("filters").onclick=e=>{const b=e.target.closest("[data-f]");if(b){filter=b.dataset.f;renderFilters();renderTable()}};
+$("thead").onclick=e=>{const h=e.target.closest("th[data-k]");if(!h)return;const k=h.dataset.k;sortDir=sortKey===k?-sortDir:(k==="product_name"?1:-1);sortKey=k;renderTable()};
+$("tbody").onclick=e=>{const r=e.target.closest("tr[data-i]");if(r)openDrawer(+r.dataset.i)};
+$("tbody").onkeydown=e=>{if(e.key==="Enter"){const r=e.target.closest("tr[data-i]");if(r)openDrawer(+r.dataset.i)}};
+$("dbg").onclick=closeDrawer;$("dclose").onclick=closeDrawer;$("dclose2").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
+$("btnExport").onclick=exportCSV;$("btnRefresh").onclick=loadSheet;
+window.addEventListener("DOMContentLoaded",()=>{
+ icons();
+ $("kpis").innerHTML=[0,1,2,3].map(()=>`<div class="sk h-32"></div>`).join("");
+ loadSheet();
+});
+</script>
+</body>
+</html>
